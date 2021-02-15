@@ -6,7 +6,7 @@ import torchvision.transforms as T
 
 class DQN(nn.Module):
 
-    def __init__(self, in_channels=4, num_actions=18):
+    def __init__(self, in_channels=4, num_actions=4):
         super(DQN, self).__init__()
 
         self.conv = nn.Sequential(
@@ -21,7 +21,7 @@ class DQN(nn.Module):
         self.fc = nn.Sequential(
             nn.Linear(7 * 7 * 64, 512),
             nn.ReLU(),
-            nn.Linear(512, self.num_actions)
+            nn.Linear(512, num_actions)
         )
 
     
