@@ -21,6 +21,10 @@ from atari_wrappers import make_atari, wrap_deepmind
 from replay_buffer import ReplayBuffer
 from dqn import DQN
 
+import sys
+# insert at 1, 0 is the script path (or '' in REPL)
+sys.path.insert(0, '../deepfool')
+from deepfool_atari import deepfool
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -28,6 +32,7 @@ def parse_args():
     parser.add_argument('--train', action='store_true')  # False by default, if --train then True
     parser.add_argument('--test', action='store_true')  # False by default, if --test then True
     parser.add_argument('--render', action='store_true')  # False by default, if --render then True
+    parser.add_argument('--attack', action='store_true') # False by default, if --attack then True
 
     return parser.parse_args()
 
@@ -157,6 +162,8 @@ def test():
         total_reward = 0.0
         done = False
         while not done:
+            if args.attack:
+                r_tot, loop_i, label, k_i, state = deepfool(state, policy_net, num_actions=num_actions)
             action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
 
             if args.render:
