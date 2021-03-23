@@ -27,14 +27,17 @@ import sys
 sys.path.insert(0, '../deepfool')
 from deepfool_atari import deepfool
 
+sys.path.insert(0, '../simba')
+from simba import simba
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--train', action='store_true')  # False by default, if --train then True
     parser.add_argument('--test', action='store_true')  # False by default, if --test then True
     parser.add_argument('--render', action='store_true')  # False by default, if --render then True
-    parser.add_argument('--attack', action='store_true') # False by default, if --attack then True
-    parser.add_argument('game', help='game to train/test on')
+    parser.add_argument('--attack', help='deepfool/simba')
+    parser.add_argument('--game', help='game to train/test on')
 
     return parser.parse_args()
 
@@ -127,7 +130,7 @@ def train():
         
         episode_rewards[-1] += reward
 
-        # check is the game has ended
+        # check if the game has ended
         if not done:
             next_state = get_state(obs)
         else:
@@ -173,7 +176,7 @@ def train():
         # save model checkpoint
         if steps_done % SAVE_FREQ == 0:
             time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-            torch.save(policy_net.state_dict(), models_dir + time)
+            torch.save(policy_net.state_dict(), models_dir + time + '_' + str(steps_done))
 
     # close the environment
     env.close()
@@ -192,11 +195,14 @@ def test():
         done = False
 
         while not done:
-            # check if we are trying to attack
-            if args.attack:
+            # check if we are trying to attack and which attack
+            if args.attack == 'deepfool':
                 r_tot, loop_i, label, k_i, state = deepfool(state, policy_net, num_actions=num_actions)
-
-            action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
+                action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
+            elif arg.attack == 'simba':
+                action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
+                state = simba(state, action, policy_net)
+                action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
 
             if args.render:
                 env.render()
@@ -257,7 +263,7 @@ if __name__ == "__main__":
     MEMORY_SIZE = 10 * INITIAL_MEMORY
     STEPS = int(2e7)
     SAVE_FREQ = 10000
-    TEST_EP = 2
+    TEST_EP = 10
 
     log.info(f'BATCH_SIZE: {BATCH_SIZE}')
     log.info(f'GAMMA: {GAMMA}')
