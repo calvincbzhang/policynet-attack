@@ -16,6 +16,8 @@ import numpy as np
 import torch.optim as optim
 import torch.autograd as autograd
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import cv2
 
 from gym.wrappers import Monitor
 from atari_wrappers import make_atari, wrap_deepmind
@@ -36,7 +38,7 @@ def parse_args():
     parser.add_argument('--train', action='store_true')  # False by default, if --train then True
     parser.add_argument('--test', action='store_true')  # False by default, if --test then True
     parser.add_argument('--render', action='store_true')  # False by default, if --render then True
-    parser.add_argument('--attack', help='deepfool/simba')
+    parser.add_argument('--attack', help='noise/deepfool/simba')
     parser.add_argument('--game', help='game to train/test on')
 
     return parser.parse_args()
@@ -62,6 +64,19 @@ def get_state(obs):
     state = state.transpose((2, 0, 1))
     state = torch.from_numpy(state)
     return state.unsqueeze(0)
+
+def rand_noise(state, epsilon=0.02):
+    '''
+    Add some random noise to the image
+    '''
+    # get the noise to be in [-eps, eps]
+    noise = -2 * epsilon * torch.rand(size=state.size()) + epsilon
+    state += noise
+    state /= torch.max(state)
+    # plt.imshow(state.reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
+    # plt.show()
+    # exit()
+    return state
 
 
 def learn():
@@ -196,13 +211,15 @@ def test():
 
         while not done:
             # check if we are trying to attack and which attack
-            if args.attack == 'deepfool':
+            if args.attack == 'noise':
+                state = rand_noise(state)
+            elif args.attack == 'deepfool':
                 r_tot, loop_i, label, k_i, state = deepfool(state, policy_net, num_actions=num_actions)
-                action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
-            elif arg.attack == 'simba':
+            elif args.attack == 'simba':
                 action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
                 state = simba(state, action, policy_net)
-                action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
+
+            action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
 
             if args.render:
                 env.render()
