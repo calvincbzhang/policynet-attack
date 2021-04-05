@@ -53,7 +53,7 @@ def main(args):
             plt.subplot(3, 4, i+1)
             plt.tight_layout()
             r_tot, loop_i, label, k_i, pert_image = deepfool(images.cpu()[i], model)
-            plt.imshow(images.cpu()[i][0], cmap='gray', interpolation='none')
+            plt.imshow(pert_image.cpu()[0, 0], cmap='gray', interpolation='none')
             plt.title(f'True: {labels[i]}, Adv: {k_i}')
             plt.xticks([])
             plt.yticks([])
