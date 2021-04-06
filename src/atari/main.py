@@ -1,7 +1,3 @@
-'''
-Code inspired and readapted from https://github.com/jmichaux/dqn-pytorch
-'''
-
 import gym
 import torch
 import random
@@ -30,7 +26,7 @@ sys.path.insert(0, '../deepfool')
 from deepfool_atari import deepfool
 
 sys.path.insert(0, '../simba')
-from simba import simba
+from simba import simba, simba_mod
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -38,7 +34,7 @@ def parse_args():
     parser.add_argument('--train', action='store_true')  # False by default, if --train then True
     parser.add_argument('--test', action='store_true')  # False by default, if --test then True
     parser.add_argument('--render', action='store_true')  # False by default, if --render then True
-    parser.add_argument('--attack', help='noise/deepfool/simba')
+    parser.add_argument('--attack', help='noise/deepfool/simba/simba_mod')
     parser.add_argument('--game', help='game to train/test on')
 
     return parser.parse_args()
@@ -64,6 +60,7 @@ def get_state(obs):
     state = state.transpose((2, 0, 1))
     state = torch.from_numpy(state)
     return state.unsqueeze(0)
+
 
 def rand_noise(state, epsilon=0.02):
     '''
@@ -218,6 +215,12 @@ def test():
             elif args.attack == 'simba':
                 action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
                 state = simba(state, action, policy_net)
+            elif args.attack == 'simba_mod':
+                action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
+                state = simba_mod(state, action, policy_net)
+            
+            # plt.imshow(state.reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
+            # plt.show()
 
             action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
 
