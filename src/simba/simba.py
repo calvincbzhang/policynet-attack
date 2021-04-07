@@ -3,6 +3,7 @@ Code inspired from the official repository https://github.com/cg563/simple-black
 '''
 
 import torch
+import cv2
 import matplotlib.pyplot as plt
 
 def simba(x, y, model, num_iters=10000, epsilon=0.1):
@@ -13,6 +14,9 @@ def simba(x, y, model, num_iters=10000, epsilon=0.1):
 
     # get the q_value from the model
     q_val = model(x.to('cuda'))[0, y].view(1,1)
+
+    attack = torch.zeros(num_pixels)
+    attack = attack.view(x.size())
 
     new_y = y
     i = 0
@@ -36,14 +40,17 @@ def simba(x, y, model, num_iters=10000, epsilon=0.1):
             if new_q_val < q_val:
                 q_val = new_q_val
                 x = new_x
+                attack += epsilon * delta
         i += 1
     
     # print(i)
     # plt.imshow(new_x.to('cpu').reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
     # plt.show()
+    # cv2.imshow('image', attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
+    # cv2.waitKey(0)
     # exit()
     # return perturbed image
-    return new_x
+    return new_x, attack
 
 
 def simba_mod(x, y, model, num_iters=500, epsilon=1):
@@ -58,6 +65,9 @@ def simba_mod(x, y, model, num_iters=500, epsilon=1):
 
     # get the q_value from the model
     q_val = model(x.to('cuda'))[0, y].view(1,1)
+
+    attack = torch.zeros(num_pixels)
+    attack = attack.view(x.size())
 
     new_y = y
     i = 0
@@ -80,11 +90,14 @@ def simba_mod(x, y, model, num_iters=500, epsilon=1):
         if new_q_val < q_val:
             q_val = new_q_val
             x = new_x
+            attack += epsilon * delta
         i += 1
     
     # print(i)
     # plt.imshow(new_x.to('cpu').reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
     # plt.show()
+    # cv2.imshow('image', attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
+    # cv2.waitKey(0)
     # exit()
     # return perturbed image
-    return new_x
+    return new_x, attack
