@@ -40,10 +40,10 @@ def simba(x, y, model, num_iters=10000, epsilon=0.1):
             if new_q_val < q_val:
                 q_val = new_q_val
                 x = new_x
-                attack += epsilon * delta
+                attack += (epsilon * delta)
         i += 1
     
-    # print(i)
+    print(f'Iterations for SimBA: {i}')
     # plt.imshow(new_x.to('cpu').reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
     # plt.show()
     # cv2.imshow('image', attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
@@ -90,11 +90,15 @@ def simba_mod(x, y, model, num_iters=500, epsilon=1):
         if new_q_val < q_val:
             q_val = new_q_val
             x = new_x
-            attack += epsilon * delta
+            attack += (epsilon * delta)
         i += 1
     
     # print(i)
     # plt.imshow(new_x.to('cpu').reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
+    # plt.show()
+    # cv2.imshow('image', new_x.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
+    # cv2.waitKey(0)
+    # plt.imshow(attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy(), cmap='gray')
     # plt.show()
     # cv2.imshow('image', attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
     # cv2.waitKey(0)

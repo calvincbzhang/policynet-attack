@@ -37,6 +37,7 @@ def parse_args():
     parser.add_argument('--attack', help='noise/deepfool/simba/simba_mod')
     parser.add_argument('--game', help='game to train/test on')
     parser.add_argument('--video', action='store_true')  # False by default, if --train then True
+    parser.add_argument('--imshow', action='store_true')  # False by default, if --train then True
 
     return parser.parse_args()
 
@@ -229,26 +230,27 @@ def test():
 
             if args.video:
                 states.append(state.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
+                if args.imshow:
+                    plt.imshow(state.to('cpu').reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
+                    plt.show()
+                    cv2.imshow('image', state.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
+                    cv2.waitKey(0)
+
                 if args.attack:
                     if args.attack == 'deepfool':
                         attacks.append(np.transpose(attack.reshape(1, -1, 84), (1, 2, 0)))
+                        if args.imshow:
+                            plt.imshow(np.transpose(attack.reshape(1, -1, 84), (1, 2, 0)), cmap='gray')
+                            plt.show()
+                            cv2.imshow('image', np.transpose(attack.reshape(1, -1, 84), (1, 2, 0)))
+                            cv2.waitKey(0)  
                     else:
                         attacks.append(attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
-            
-            # if args.attack == 'deepfool':
-            #     plt.imshow(state.to('cpu').reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
-            #     plt.show()
-            #     plt.imshow(np.transpose(attack.reshape(1, -1, 84), (1, 2, 0)), cmap='gray')
-            #     plt.show()
-            #     cv2.imshow('image', np.transpose(attack.reshape(1, -1, 84), (1, 2, 0)))
-            #     cv2.waitKey(0)
-            # elif args.attack:
-            #     plt.imshow(state.reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
-            #     plt.show()
-            #     plt.imshow(attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy(), cmap='gray')
-            #     plt.show()
-            #     cv2.imshow('image', attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
-            #     cv2.waitKey(0)
+                        if args.imshow:
+                            plt.imshow(attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy(), cmap='gray')
+                            plt.show()
+                            cv2.imshow('image', attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
+                            cv2.waitKey(0)
 
             action = policy_net(state.to('cuda')).max(1)[1].view(1,1)
 
@@ -285,28 +287,26 @@ def test():
             video = cv2.VideoWriter(video_dir + '/' + str(episode) + '.mp4', fourcc, float(FPS), (width, height))
 
             for frame in states:
-                video.write(np.uint8(frame[:width, :height] * 255))
+                video.write(np.uint8(np.clip(frame[:width, :height] * 255.0, 0, 255)))
             video.release()
 
             if args.attack:
                 attacks = np.array(attacks)
                 attacks = np.repeat(attacks, 3, axis=3)
 
-                video = cv2.VideoWriter(video_dir + '/' + str(episode) + '_attacks.mp4', fourcc, float(FPS), (width, height))
-
+                video = cv2.VideoWriter(video_dir + '/' + str(episode) + '_' + args.attack + '.mp4', fourcc, float(FPS), (width, height))
 
                 for frame in attacks:
-                    video.write(np.uint8(frame[:width, :height] * 255))
+                    video.write(np.uint8(np.clip(frame[:width, :height] * 255.0, 0, 255)))
 
                 video.release()
 
-                if args.attack == 'deepfool':
-                    scaled_attacks = (attacks - attacks.min()) / (attacks.max() - attacks.min())
-                    scaled_video = cv2.VideoWriter(video_dir + '/' + str(episode) + '_attacks_scaled.mp4', fourcc, float(FPS), (width, height))
+                scaled_attacks = (attacks - attacks.min()) / (attacks.max() - attacks.min())
+                scaled_video = cv2.VideoWriter(video_dir + '/' + str(episode) + '_' + args.attack + '_scaled.mp4', fourcc, float(FPS), (width, height))
 
-                    for frame in scaled_attacks:
-                        scaled_video.write(np.uint8(frame[:width, :height] * 255))
-                    scaled_video.release
+                for frame in scaled_attacks:
+                    scaled_video.write(np.uint8(np.clip(frame[:width, :height] * 255.0, 0, 255)))
+                scaled_video.release
                 
 
     # log results of testing
@@ -338,6 +338,8 @@ if __name__ == "__main__":
         os.mkdir(video_dir)
 
     log.basicConfig(filename=log_dir+time+'.log', level=log.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+
+    print(f'Logging on {log_dir+time+".log"}')
 
     # hyperparameters
     BATCH_SIZE = 32
