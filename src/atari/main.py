@@ -189,6 +189,7 @@ def train():
 
         # save model checkpoint
         if steps_done % SAVE_FREQ == 0:
+            print(f'Logging on {logfile}')
             time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
             torch.save(policy_net.state_dict(), models_dir + time + '_' + str(steps_done))
 
@@ -272,6 +273,7 @@ def test():
 
         # log results of episode
         rewards.append(total_reward)
+        print(f'Logging on {logfile}')
         print("Finished Episode {} with reward {}".format(episode, total_reward))
         log.info("Finished Episode {} with reward {}".format(episode, total_reward))
 
@@ -336,22 +338,26 @@ if __name__ == "__main__":
         os.mkdir(log_dir)
     if not os.path.exists(video_dir):
         os.mkdir(video_dir)
+    
+    logfile = log_dir + time + '.log'
 
-    log.basicConfig(filename=log_dir+time+'.log', level=log.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
+    log.basicConfig(filename=logfile, level=log.DEBUG, format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p')
 
-    print(f'Logging on {log_dir+time+".log"}')
+    print(f'Logging on {logfile}')
 
     # hyperparameters
     BATCH_SIZE = 32
     GAMMA = 0.99
+    LEARNING_RATE = 0.00025 # 1e-4
+
     EPS_START = 1
     EPS_END = 0.01
     EPS_DECAY = 200000
+
     TARGET_UPDATE = 1000
-    LEARNING_RATE = 1e-4
     LEARNING_FREQ = 4
     INITIAL_MEMORY = 10000
-    MEMORY_SIZE = 10 * INITIAL_MEMORY
+    MEMORY_SIZE = 50 * INITIAL_MEMORY # 10 * INITIAL_MEMORY
     STEPS = int(2e7)
     SAVE_FREQ = 10000
     TEST_EP = 10
@@ -359,11 +365,13 @@ if __name__ == "__main__":
 
     log.info(f'BATCH_SIZE: {BATCH_SIZE}')
     log.info(f'GAMMA: {GAMMA}')
+    log.info(f'LEARNING_RATE: {LEARNING_RATE}')
+
     log.info(f'EPS_START: {EPS_START}')
     log.info(f'EPS_END: {EPS_END}')
     log.info(f'EPS_DECAY: {EPS_DECAY}')
+    
     log.info(f'TARGET_UPDATE: {TARGET_UPDATE}')
-    log.info(f'LEARNING_RATE: {BATCH_SIZE}')
     log.info(f'LEARNING_FREQ: {LEARNING_FREQ}')
     log.info(f'INITIAL_MEMORY: {INITIAL_MEMORY}')
     log.info(f'MEMORY_SIZE: {MEMORY_SIZE}')
@@ -392,12 +400,13 @@ if __name__ == "__main__":
     update_target(policy_net, target_net)
 
     # if there is a saved model
-    if len(os.listdir(models_dir)) != 0 and args.train:
-        print(f'Loading a model: {os.listdir(models_dir)[-1]}')
-        log.info(f'Loading a model: {os.listdir(models_dir)[-1]}')
-        policy_net.load_state_dict(torch.load(models_dir + os.listdir(models_dir)[-1]))
-        policy_net.eval()
-        update_target(policy_net, target_net)
+    # test_dir = '../../models/for_testing/'
+    # if game in os.listdir(test_dir) and args.train:
+    #     print(f'Loading a model: {test_dir + game}')
+    #     log.info(f'Loading a model: {test_dir + game}')
+    #     policy_net.load_state_dict(torch.load(test_dir + game))
+    #     policy_net.eval()
+    #     update_target(policy_net, target_net)
 
     # optimizer
     optimizer = optim.RMSprop(policy_net.parameters(), lr=LEARNING_RATE)
