@@ -38,6 +38,7 @@ def parse_args():
     parser.add_argument('--game', help='game to train/test on')
     parser.add_argument('--video', action='store_true')  # False by default, if --train then True
     parser.add_argument('--imshow', action='store_true')  # False by default, if --train then True
+    parser.add_argument('--test_ep', help='number of episodes for testing', type=int, default=1)
 
     return parser.parse_args()
 
@@ -201,6 +202,7 @@ def test():
     # time for logging
     time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     rewards = []
+    reward_sum = 0.0
 
     for episode in range(TEST_EP):
 
@@ -267,6 +269,7 @@ def test():
             if not done:
                 next_state = get_state(obs)
             else:
+                reward_sum += total_reward
                 next_state = None
 
             state = next_state
@@ -276,6 +279,11 @@ def test():
         print(f'Logging on {logfile}')
         print("Finished Episode {} with reward {}".format(episode, total_reward))
         log.info("Finished Episode {} with reward {}".format(episode, total_reward))
+
+        if info['ale.lives'] == 0:
+            print("Finished Actual Episode with reward {}".format(reward_sum))
+            log.info("Finished Actual Episode with reward {}".format(reward_sum))
+            reward_sum = 0.0
 
         # video
         if args.video:
@@ -348,7 +356,7 @@ if __name__ == "__main__":
     # hyperparameters
     BATCH_SIZE = 32
     GAMMA = 0.99
-    LEARNING_RATE = 0.00025 # 1e-4
+    LEARNING_RATE = 1e-4
 
     EPS_START = 1
     EPS_END = 0.01
@@ -357,10 +365,10 @@ if __name__ == "__main__":
     TARGET_UPDATE = 1000
     LEARNING_FREQ = 4
     INITIAL_MEMORY = 10000
-    MEMORY_SIZE = 50 * INITIAL_MEMORY # 10 * INITIAL_MEMORY
+    MEMORY_SIZE = 10 * INITIAL_MEMORY
     STEPS = int(2e7)
     SAVE_FREQ = 10000
-    TEST_EP = 10
+    TEST_EP = args.test_ep
     FPS = 30
 
     log.info(f'BATCH_SIZE: {BATCH_SIZE}')
@@ -389,8 +397,13 @@ if __name__ == "__main__":
     log.info(f'Using device: {device}')
 
     # define the environment
-    env = make_atari(game.capitalize() + 'NoFrameskip-v4')
-    env = wrap_deepmind(env, frame_stack=True, scale=True)
+    env = make_atari(game[0].capitalize() + game[1:] + 'NoFrameskip-v4')
+    if args.train:
+        env = wrap_deepmind(env, frame_stack=True, scale=True)
+    elif args.test:
+        env = wrap_deepmind(env, clip_rewards=False, frame_stack=True, scale=True)
+    else:
+        exit('You need to select either --train or --test')
     env = gym.wrappers.Monitor(env, log_dir + time + '_videos')
     num_actions = env.action_space.n
 
