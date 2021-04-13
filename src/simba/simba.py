@@ -5,6 +5,7 @@ Code inspired from the official repository https://github.com/cg563/simple-black
 import torch
 import cv2
 import matplotlib.pyplot as plt
+import logging as log
 
 def simba(x, y, model, num_iters=10000, epsilon=0.1):
 
@@ -44,6 +45,7 @@ def simba(x, y, model, num_iters=10000, epsilon=0.1):
         i += 1
     
     print(f'Iterations for SimBA: {i}')
+    log.info(f'Iterations for SimBA: {i}')
     # plt.imshow(new_x.to('cpu').reshape(1, -1, 84).permute(1, 2, 0), cmap='gray')
     # plt.show()
     # cv2.imshow('image', attack.to('cpu').reshape(1, -1, 84).permute(1, 2, 0).numpy())
